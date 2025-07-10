@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"time"
+	"github.com/golang-jwt/jwt/v5"
 	"gopkg.in/yaml.v3"
 )
 
@@ -14,15 +16,41 @@ type routes struct{
 	Route map[string][]string `yaml:"routes"`
 }
 
+var secretKey = []byte("stupidstupidstupidstupidstupidstupid")
+
 func get_path(u string ,r routes) string{
 	path := r.Route[u][0]
-	
+	fmt.Print(path)
 	//deques the first element and adds it to the end of the slice
 	r.Route[u] = r.Route[u][1:]
 	r.Route[u] = append(r.Route[u] , path)
 	return path
 }
 
+func verify(tok string) error {
+	token , err := jwt.Parse(tok , func(t *jwt.Token) (interface{}, error) {
+		return secretKey , nil
+	})
+	if err != nil{
+		return err
+	}
+	if !token.Valid {
+		return errors.New("invalid token")
+	}
+	return nil
+}
+
+func authenticate(r *http.Request) error{
+	tk := r.Header.Get("Authorization")
+	jwt_token := tk[len("Bearer "):]
+	err := verify(jwt_token)
+
+	if err != nil{
+		return err
+	}
+
+	return nil
+}
 
 func forward_to_backend(w http.ResponseWriter , r *http.Request , backend string){
 	tr := http.Transport{
@@ -66,10 +94,16 @@ func main() {
 	if err := yaml.Unmarshal(f , &rout); err != nil {
 		fmt.Print(err)
 	}
-	
 
 	log.Fatal(http.ListenAndServe(":5000", http.HandlerFunc( func(w http.ResponseWriter, r *http.Request) {
 		urls := r.URL
+		err := authenticate(r)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprintf(w ,"Invalid Token %v",err)
+			return 
+		}
+
 		b := get_path(urls.String() , rout)
 		logging(r , b)
 		forward_to_backend(w , r, b)
