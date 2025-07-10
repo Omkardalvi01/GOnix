@@ -5,23 +5,24 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
+	"gopkg.in/yaml.v3"
 )
 
-var routes = map[string]string{
-	"/user" : "http://localhost:4000/user",
-	"/admin" : "http://localhost:4000/admin" ,
+type routes struct{
+	Route map[string][]string `yaml:"routes"`
 }
 
-func proxy_handler(w http.ResponseWriter , r *http.Request){
+func get_path(u string ,r routes) string{
+	path := r.Route[u][0]
 	
-	urls := r.URL
-	b := routes[urls.String()]
-	logging(r)
-	forward_to_backend(w , r, b)
-	// tr.RoundTrip()
-
+	//deques the first element and adds it to the end of the slice
+	r.Route[u] = r.Route[u][1:]
+	r.Route[u] = append(r.Route[u] , path)
+	return path
 }
+
 
 func forward_to_backend(w http.ResponseWriter , r *http.Request , backend string){
 	tr := http.Transport{
@@ -44,8 +45,8 @@ func forward_to_backend(w http.ResponseWriter , r *http.Request , backend string
 	
 }
 
-func logging(r *http.Request){
-	fmt.Printf("time : %v , url : %v , ip_address : %v" , time.Now() , r.URL , r.RemoteAddr)
+func logging(r *http.Request , b string){
+	fmt.Printf("time : %v , url : %v , forwarded_url : %v\n" , time.Now() , r.URL , b)
 }
 
 func set_header(src , dest http.Header){
@@ -56,5 +57,22 @@ func set_header(src , dest http.Header){
 	}
 }
 func main() {
-	log.Fatal(http.ListenAndServe(":5000", http.HandlerFunc(proxy_handler)))
+
+	f , err := os.ReadFile("config.yaml")
+	if err != nil {
+		fmt.Println(err)
+	}
+	var rout routes
+	if err := yaml.Unmarshal(f , &rout); err != nil {
+		fmt.Print(err)
+	}
+	
+
+	log.Fatal(http.ListenAndServe(":5000", http.HandlerFunc( func(w http.ResponseWriter, r *http.Request) {
+		urls := r.URL
+		b := get_path(urls.String() , rout)
+		logging(r , b)
+		forward_to_backend(w , r, b)
+	})))
+	
 }

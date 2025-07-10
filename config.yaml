@@ -1,0 +1,8 @@
+routes:
+  /user:
+    - http://localhost:4000/user/v1
+    - http://localhost:4000/user/v2
+    - http://localhost:4000/user/v3
+  /admin:
+    - http://localhost:4000/admin/v1
+    - http://localhost:4000/admin/v2

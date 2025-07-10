@@ -12,7 +12,9 @@ func test_response(w http.ResponseWriter , r *http.Request){
 }
 
 func main(){
-	http.HandleFunc("/user", test_response)
+	http.HandleFunc("/user/v1", test_response)
+	http.HandleFunc("/user/v2", test_response)
+	http.HandleFunc("/user/v3", test_response)
 	http.HandleFunc("/admin", test_response)
 
 	log.Fatal(http.ListenAndServe(":4000", nil))
