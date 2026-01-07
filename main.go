@@ -17,7 +17,7 @@ type routes struct{
 }
 
 var secretKey = []byte("stupidstupidstupidstupidstupidstupid")
-
+var INVALID_TOKEN = errors.New("Invalid Token")
 var config_file = "config.yaml"
 
 func get_path(u string ,r routes) string{
@@ -37,7 +37,7 @@ func verify(tok string) error {
 		return err
 	}
 	if !token.Valid {
-		return errors.New("invalid token")
+		return INVALID_TOKEN
 	}
 	return nil
 }
@@ -100,12 +100,18 @@ func main() {
 	log.Fatal(http.ListenAndServe(":5000", http.HandlerFunc( func(w http.ResponseWriter, r *http.Request) {
 		urls := r.URL
 		err := authenticate(r)
-		if err != nil {
+
+		if err == INVALID_TOKEN {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprintf(w ,"Invalid Token %v",err)
 			return 
 		}
-
+		
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		
 		b := get_path(urls.String() , rout)
 		logging(r , b)
 		forward_to_backend(w , r, b)
