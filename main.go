@@ -18,6 +18,8 @@ type routes struct{
 
 var secretKey = []byte("stupidstupidstupidstupidstupidstupid")
 
+var config_file = "config.yaml"
+
 func get_path(u string ,r routes) string{
 	path := r.Route[u][0]
 	fmt.Print(path)
@@ -86,7 +88,7 @@ func set_header(src , dest http.Header){
 }
 func main() {
 
-	f , err := os.ReadFile("config.yaml")
+	f , err := os.ReadFile(config_file)
 	if err != nil {
 		fmt.Println(err)
 	}
