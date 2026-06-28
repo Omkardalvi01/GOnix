@@ -6,3 +6,17 @@ routes:
   /admin:
     - http://localhost:4000/admin/v1
     - http://localhost:4000/admin/v2
+
+server:
+  http_address: ":5000"
+  https_address: ":5443"
+  redirect_http: false
+  tls:
+    enabled: false
+    cert_file: "certs/server.crt"
+    key_file: "certs/server.key"
+
+cache:
+  enabled: true
+  ttl_seconds: 30
+  max_entries: 1024
